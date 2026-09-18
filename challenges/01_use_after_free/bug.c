@@ -86,22 +86,26 @@ static Widget *widget_new(const VTable *vt, int id, const char *label) {
 
     /* [Thinking Point]
     *   w 에 아직 아무 값도 넣지 않았는데, sizeof *w 로 *w 를 써도 괜찮은 이유는?
+        => malloc(sizeof *w) 는 변수에 접근하지 않고 변수의 타입만 가져옴
+
     *   tip 1. sizeof 는 피연산자를 '실행(역참조)'하지 않고 '타입'만 본다.
     *          → *w 의 타입(Widget)만 필요할 뿐, w 를 실제로 따라가지 않는다.
     *   tip 2. 그래서 sizeof *w 는 (VLA 제외) 컴파일 타임에 sizeof(Widget) 상수로 치환된다.
     *   생각해보기: sizeof(Widget) 대신 sizeof *w 로 쓰면 어떤 장점이 있을까?
+    *   => *w 의 타입이 바뀌었을 때 수정할 곳이 적음 
     */
-    Widget *w = malloc(sizeof *w);
+    Widget *w = malloc(sizeof *w);  // widget 은 사이즈가 계속 늘어나서 바로 free 를 안 해주는건가?
     if (!w) { perror("malloc"); exit(1); }
     w->vtbl = vt;
     w->id = id;
     w->closed = 0;
     strncpy(w->label, label, sizeof(w->label) - 1);
     w->label[sizeof(w->label) - 1] = '\0';
-    return w;
+    return w;   
 }
 
 static void widget_destroy(Widget *w) {
+    fprintf(stderr, "destroy id=%d w=%p\n", w->id, (void*)w);
     free(w);          
 }
 
@@ -112,6 +116,7 @@ static void screen_add(Screen *s, Widget *w) {
 
 static void screen_dispatch(Screen *s, int code) {
     for (int i = 0; i < s->count; i++) {
+        if (s->items[i] == NULL) continue;
         Widget *w = s->items[i];
         w->vtbl->on_event(w, code);
     }
@@ -119,7 +124,9 @@ static void screen_dispatch(Screen *s, int code) {
 
 static void screen_render(Screen *s) {
     for (int i = 0; i < s->count; i++) {
+        if (s->items[i] == NULL) continue;
         Widget *w = s->items[i];
+        fprintf(stderr, "render  id=%d w=%p\n", w->id, (void*)w);
         w->vtbl->render(w);      
     }
 }
@@ -127,7 +134,6 @@ static void screen_render(Screen *s) {
 static void dialog_on_event(Widget *self, int code) {
     if (code == 1) {
         self->closed = 1;
-        widget_destroy(self);   
     }
 }
 
@@ -158,6 +164,23 @@ int main(void) {
     screen_dispatch(&s, 1);
 
     /* TODO 닫힌(closed) 위젯을 여기서 정리(free + 해당 슬롯 NULL)할 필요가 있음 */
+    // 문제상황 : dialog 를 closed 했는데 아직 &s 의 메모리가 정리가 안돼서, 아래 frame 2 에서 그 공간을 다시 호출하려니까 문제 발생
+
+    // 돌면서 위젯 닫혔는지 확인
+        // 닫혔으면
+            // s 포인터를 정리 
+    for (int i = 0; i < s.count; i++){
+        if (s.items[i] == NULL) continue;
+
+        if (s.items[i]->closed == 1){
+            widget_destroy(s.items[i]);   
+            s.items[i] = NULL;
+            // s.count--; // count 를 -- 하고 빈공간에 뒷 인덱스를 다 끌어당기는 방법도 있는데, 인덱스 관리가 복잡해서 null 로 두는 방법 선택
+        }
+    }
+
+    
+    
 
     char *status = app_build_status("dialog closed");
     printf("%s\n", status);
