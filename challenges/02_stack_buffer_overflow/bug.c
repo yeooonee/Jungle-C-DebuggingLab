@@ -63,10 +63,10 @@ static int tri_index(int i, int j) {
 
 /* 파스칼의 삼각형을 tri[] 에 채운다. */
 static void build_pascal(int *tri, int rows) {
-    for (int i = 0; i <= rows; i++) {
+    for (int i = 0; i < ROWS; i++) {
         for (int j = 0; j <= i; j++) {
             int idx = tri_index(i, j);
-            if (j == 0 || j == i) {
+            if (j == 0 || j == i) { 
                 tri[idx] = 1;                         /* 양 끝은 1 */
             } else {
                 int up_left  = tri_index(i - 1, j - 1);
