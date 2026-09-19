@@ -56,17 +56,24 @@
 #define ROWS 14
 enum { SIZE = ROWS * (ROWS + 1) / 2 };   /* 0..ROWS-1 행을 담는 정확한 크기 */
 
-/* 행 i, 열 j 의 삼각 인덱스 */
+/* 행 i, 열 j 의 삼각 인덱스 */ 
 static int tri_index(int i, int j) {
     return i * (i + 1) / 2 + j;
 }
 
 /* 파스칼의 삼각형을 tri[] 에 채운다. */
+
+// 크기와 같은 인덱스는 이미 배열 밖이다. 배열의 유효 인덱스는 0 ~ n -1 임.
+// rows 까지 돌면 값은 rows 까지 돌게되고, 그럼 배열의 유효 인덱스를 벗어나게 된다. 
+// rows 14 면 추가 행은 0~14-> 15칸을 추가로 쓰게 됨.
+
+ // 0부터 rows 까지 돌면 값은 rows 까지, 횟수는 rows + 1 번 돌게되는거니까 < rows 로 해야함
+
 static void build_pascal(int *tri, int rows) {
-    for (int i = 0; i < ROWS; i++) {
+    for (int i = 0; i < rows; i++) {  
         for (int j = 0; j <= i; j++) {
             int idx = tri_index(i, j);
-            if (j == 0 || j == i) { 
+            if (j == 0 || j == i) {
                 tri[idx] = 1;                         /* 양 끝은 1 */
             } else {
                 int up_left  = tri_index(i - 1, j - 1);
