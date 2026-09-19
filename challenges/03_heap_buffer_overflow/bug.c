@@ -47,6 +47,7 @@ typedef struct {
      *   tip 2. int 는 보통 32비트라 약 21억(2^31-1)에서 넘치고, 음수도 가능하다.
      *          원소가 그보다 많아지거나 cap*sizeof(int) 계산이 커지면 int 는 오버플로된다.
      *   생각해보기: 크기를 int 로 두면 어떤 버그가 생길 수 있을까?
+     *   => int 보다 큰 값이 들어오면 overflow 발생
      */
     size_t len;
     size_t cap;
@@ -65,11 +66,15 @@ static void list_ensure(IntList *l, size_t need) {
     size_t newcap = l->cap ? l->cap * 2 : 8;
     while (newcap < need) newcap *= 2;
 
+    // int *p = realloc(l->data, l->cap * sizeof(int));
+
+    // realloc 은 새 용량으로 호출해야 하니까 l->cap 을 먼저 수정하도록 처리 
+    l->cap  = newcap;
+
     int *p = realloc(l->data, l->cap * sizeof(int));
     if (!p) { perror("realloc"); free(l->data); exit(1); }
 
     l->data = p;
-    l->cap  = newcap;
 }
 
 static void list_push(IntList *l, int x) {
