@@ -52,8 +52,11 @@ static void view_set(LineView *out, char **arr, int n) {
     out->count = n;
 }
 
-static void split_lines(LineView *out, char *text) {
-    char *parts[MAX_LINES];              
+// **lines 이니까 parts 는 결국 lines 에 들어감. 그리고 view_set에서도 **arr 을 받음.
+static void split_lines(LineView *out, char *text, char **parts) { // split_lines 내부에서 스택이 사용돼서 반환이 되지 않고 있다.
+    // char *parts[MAX_LINES];    
+    
+    // 기존에 이미 사라질 공간의 주소를 돌려주는게 문제임.
     int n = 0;
     /* strtok는 새로 할당하지 않고, 넘겨받은 문자열 내부의 주소를 돌려준다. 
     * 따라서, strtok은 원본 버퍼를 제자리에서 수정한다. 
@@ -62,13 +65,12 @@ static void split_lines(LineView *out, char *text) {
         parts[n++] = ln;
 
     view_set(out, parts, n);      
-
-    /* TODO 상기 코드를 수정하여 결과를 호출자가 준 out 에 직접 채운다(값 반환 아님, 지역 주소 반환 아님). */       
+    /* TODO 상기 코를 수정하여 결과를 호출자가 준 out 에 직접 채운다(값 반환 아님, 지역 주소 반환 아님). */       
 }
 
 /* split_lines 가 쓰던 스택 프레임을, 같은 모양(char*[8])의 지역 배열로 덮는다.
    무효가 된 parts[] 자리에 '그럴듯한 쓰레기 포인터'가 들어차게 만든다. */
-static void warm_stack(void) {
+static void warm_stack(void) {  // 스택 오류가 나오도록 하는 것
     char *scratch[MAX_LINES];
     for (int i = 0; i < MAX_LINES; i++)
         scratch[i] = (char *)0x4141414141414141ULL;   /* 매핑되지 않은 주소 */
@@ -79,12 +81,20 @@ int main(void) {
     char text[] = "alpha\nbeta\ngamma";
 
     LineView v;
-    split_lines(&v, text);               
+
+    char **parts = malloc(sizeof(char *) * MAX_LINES);
+
+    split_lines(&v, text, parts);               
     warm_stack();                        
 
     long checksum = 0;
-    for (int i = 0; i < v.count; i++)
+    for (int i = 0; i < v.count; i++){
+        // if (*v.lines == NULL) continue;
         checksum += (unsigned char)v.lines[i][0];
+    }
+
+    free(parts);
+
 
     printf("lines = %d, checksum = %ld\n", v.count, checksum);
     return 0;
