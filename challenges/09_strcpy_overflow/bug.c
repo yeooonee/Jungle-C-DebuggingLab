@@ -38,7 +38,7 @@
 /* 필요한 총 바이트 수 = 모든 조각 길이 합 + 종료 문자 1 */
 static size_t joined_size(const char *const *parts, int n) {
     size_t total = 1;                        /* '\0' 자리 */
-    for (int i = 0; i < n - 1; i++) {        
+    for (int i = 0; i < n ; i++) {        
         total += strlen(parts[i]);
     }
     return total;
@@ -51,6 +51,7 @@ static char *join(const char *const *parts, int n) {
 
     size_t off = 0;
     for (int i = 0; i < n; i++) {            /* 복사는 마지막 조각까지 전부 → 오버플로 */
+        
         strcpy(out + off, parts[i]);
         off += strlen(parts[i]);
     }
