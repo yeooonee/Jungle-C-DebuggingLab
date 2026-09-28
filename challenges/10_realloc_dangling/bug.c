@@ -89,8 +89,7 @@ static void eb_push(EditBuffer *e, int v) {
 static void eb_free(EditBuffer *e) {
     free(e->data);
     free(e->clipboard);
-    // for (int i = 0; i < e->undo_n; i++) {
-    for (int i = e->undo_n - 1; i >= 0; i --){
+    for (int i = 0; i < e->undo_n; i++) {
         free(e->undo[i]);           
     }
     e->undo_n = 0;
